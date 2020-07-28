@@ -264,7 +264,7 @@ object AppenginePlugin extends AutoPlugin {
     appengineIncludeLibUser := true,
     // this controls appengine classpath, which is used in unmanagedClasspath
     appengineClasspath := {
-      if (appengineIncludeLibUser.value) (appengineLibUserPath.value ** "*.jar").classpath ++ (appengineLibImplPath.value ** "*.jar").classpath
+      if (appengineIncludeLibUser.value) (appengineLibUserPath.value ** "*.jar").classpath ++ Seq(appengineApiJarPath.value).classpath
       else Nil
     },
 
