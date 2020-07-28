@@ -3,7 +3,7 @@ package sbtappengine
 import sbt._
 import Keys._
 import spray.revolver.RevolverKeys
-
+/*
 /**
  * Sbt compatibility code concrete instances are declared in sbt version specific folders
  */
@@ -35,3 +35,4 @@ object SbtCompatImpl extends SbtCompat with RevolverKeys {
       (appengineDebugPort in appengineDevServer).value
     )
 }
+*/

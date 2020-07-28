@@ -62,11 +62,11 @@ object AppenginePlugin extends AutoPlugin {
     lazy val appengineLibUserPath        = SettingKey[File]("appengine-lib-user-path")
     lazy val appengineLibImplPath        = SettingKey[File]("appengine-lib-impl-path")
     lazy val appengineApiJarPath         = SettingKey[File]("appengine-api-jar-path")
-    lazy val appengineAppcfgName         = SettingKey[String]("appengine-appcfg-name")
-    lazy val appengineAppcfgPath         = SettingKey[File]("appengine-appcfg-path")
-    lazy val appengineOverridePath       = SettingKey[File]("appengine-override-path")
-    lazy val appengineOverridesJarPath   = SettingKey[File]("appengine-overrides-jar-path")
-    lazy val appengineAgentJarPath       = SettingKey[File]("appengine-agent-jar-path")
+    //lazy val appengineAppcfgName         = SettingKey[String]("appengine-appcfg-name")
+    //lazy val appengineAppcfgPath         = SettingKey[File]("appengine-appcfg-path")
+    //lazy val appengineOverridePath       = SettingKey[File]("appengine-override-path")
+    //lazy val appengineOverridesJarPath   = SettingKey[File]("appengine-overrides-jar-path")
+    //lazy val appengineAgentJarPath       = SettingKey[File]("appengine-agent-jar-path")
     lazy val appengineEmptyFile          = TaskKey[File]("appengine-empty-file")
     lazy val appengineTemporaryWarPath   = SettingKey[File]("appengine-temporary-war-path")
     lazy val appengineLocalDbPath        = SettingKey[File]("appengine-local-db-path")
@@ -85,6 +85,7 @@ object AppenginePlugin extends AutoPlugin {
 
   object AppEngine {
     // see https://github.com/jberkel/android-plugin/blob/master/src/main/scala/AndroidHelpers.scala
+    /*
     def appcfgTask(action: String,
                    depends: TaskKey[File] = appengineEmptyFile, outputFile: Option[String] = None): Initialize[InputTask[Unit]] =
       Def.inputTask {
@@ -119,9 +120,11 @@ object AppenginePlugin extends AutoPlugin {
         else s.log.info(out.toString)
         ()
       }
+      */
     
     def buildAppengineSdkPath(baseDir: File): File = {
       var sdk = System.getenv("APPENGINE_SDK_HOME")
+      // platform/google_appengine/google/appengine/tools/java
       if (sdk == null) {
         val appengineSettings = baseDir / "appengine.properties"
         val prop = new Properties()
@@ -134,6 +137,7 @@ object AppenginePlugin extends AutoPlugin {
     }
 
     def buildSdkVersion(libUserPath: File): String = {
+      return "2.0.0"
       val pat = """appengine-api-1.0-sdk-(\d\.\d+\.\d+(?:\.\d+)*)\.jar""".r
       (libUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
         case jar::_ => jar.name match {
@@ -192,6 +196,7 @@ object AppenginePlugin extends AutoPlugin {
     // "All of these JARs are in the SDK's lib/user/ directory."
     unmanagedClasspath in Runtime ++= unmanagedClasspath.value,
 
+/*
     appengineRequestLogs     := AppEngine.appcfgTask("request_logs", outputFile = Some("request.log")).evaluated,
     appengineRollback        := AppEngine.appcfgTask("rollback").evaluated,
     appengineDeploy          := AppEngine.appcfgTask("update", `package`).evaluated,
@@ -207,7 +212,7 @@ object AppenginePlugin extends AutoPlugin {
     appengineStartBackend    := AppEngine.appcfgBackendTask("start", `package`, true).evaluated,
     appengineStopBackend     := AppEngine.appcfgBackendTask("stop", `package`, true).evaluated,
     appengineDeleteBackend   := AppEngine.appcfgBackendTask("delete", `package`, true).evaluated,
-
+*/
     appengineDevServer       := {
       val args = startArgsParser.parsed
       val x = (products in Compile).value
@@ -239,40 +244,45 @@ object AppenginePlugin extends AutoPlugin {
     appengineDebugPort in appengineDevServer := 1044,
     appengineOnStartHooks in appengineDevServer := Nil,
     appengineOnStopHooks in appengineDevServer := Nil,
+    /*
     SbtCompat.impl.changeJavaOptions { (o, a, jr, ldb, d, dp) =>
       Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath,
         "-Ddatastore.backing_store=" + ldb.getAbsolutePath) ++
       Seq("-Djava.awt.headless=true") ++
       (if (d) Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=" + dp.toString) else Nil) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
+      */
     appengineStopDevServer := RevolverPlugin.autoImport.reStop.value,
     
     appengineApiToolsJar := "appengine-tools-api.jar",
     appengineSdkVersion := AppEngine.buildSdkVersion(appengineLibUserPath.value),
     appengineSdkPath := AppEngine.buildAppengineSdkPath(baseDirectory.value),
 
+//platform/google_appengine/google/appengine/tools/java
+    //javaPath := appengineSdkPath.value / "platform/google_appengine/google/appengine/tools/java",
+
     appengineIncludeLibUser := true,
     // this controls appengine classpath, which is used in unmanagedClasspath
     appengineClasspath := {
-      if (appengineIncludeLibUser.value) (appengineLibUserPath.value ** "*.jar").classpath
+      if (appengineIncludeLibUser.value) (appengineLibUserPath.value ** "*.jar").classpath ++ (appengineLibImplPath.value ** "*.jar").classpath
       else Nil
     },
 
-    appengineApiJarName := { "appengine-api-1.0-sdk-" + appengineSdkVersion.value + ".jar" },
-    appengineApiLabsJarName := { "appengine-api-labs-" + appengineSdkVersion.value + ".jar" },
-    appengineJsr107CacheJarName := { "appengine-jsr107cache-" + appengineSdkVersion.value + ".jar" },
+    appengineApiJarName := { "appengine-api.jar" },
+    appengineApiLabsJarName := { "appengine-api-labs-.jar" },
+    appengineJsr107CacheJarName := { "appengine-jsr107cache-0.0.0.jar" },
 
-    appengineBinPath := appengineSdkPath.value / "bin",
+    appengineBinPath := appengineSdkPath.value / "../../../../../../bin",
     appengineLibPath := appengineSdkPath.value / "lib",
     appengineLibUserPath := appengineLibPath.value / "user",
     appengineLibImplPath := appengineLibPath.value / "impl",
-    appengineApiJarPath := appengineLibUserPath.value / appengineApiJarName.value,
+    appengineApiJarPath := appengineLibImplPath.value / appengineApiJarName.value,
     appengineApiToolsPath := appengineLibPath.value / appengineApiToolsJar.value,
-    appengineAppcfgName := "appcfg" + AppEngine.osBatchSuffix,
-    appengineAppcfgPath := appengineBinPath.value / appengineAppcfgName.value,
-    appengineOverridePath := appengineLibPath.value / "override",
-    appengineOverridesJarPath := appengineOverridePath.value / "appengine-dev-jdk-overrides.jar",
-    appengineAgentJarPath := appengineLibPath.value / "agent" / "appengine-agent.jar",
+    //appengineAppcfgName := "appcfg" + AppEngine.osBatchSuffix,
+    //appengineAppcfgPath := appengineBinPath.value / appengineAppcfgName.value,
+    //appengineOverridePath := appengineLibPath.value / "override",
+    //appengineOverridesJarPath := appengineOverridePath.value / "appengine-dev-jdk-overrides.jar",
+    //appengineAgentJarPath := appengineLibPath.value / "agent" / "appengine-agent.jar",
     appengineEmptyFile := file(""),
     appengineTemporaryWarPath := target.value / "webapp"
   )
